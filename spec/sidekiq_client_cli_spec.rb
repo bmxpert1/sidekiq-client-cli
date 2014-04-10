@@ -157,6 +157,7 @@ describe SidekiqClientCLI do
     let(:settings) { double("settings") }
     let(:klass1) { "FirstWorker" }
     let(:klass2) { "SecondWorker" }
+    let(:klass3) { "ThirdWorker[param1,param2]" }
 
     before(:each) do
       settings.stub(:command_args).and_return [klass1, klass2]
@@ -228,6 +229,21 @@ describe SidekiqClientCLI do
                                                  'args' => [],
                                                  'queue' => default_queue,
                                                  'retry' => retry_attempts)
+
+      @client.push
+    end
+
+    it 'pushes the worker class with the correct arguments' do
+      settings.stub(:command_args).and_return [klass3]
+
+      settings.stub(:queue).and_return default_queue
+      settings.stub(:retry).and_return default_retry_option
+      @client.settings = settings
+
+      Sidekiq::Client.should_receive(:push).with('class' => klass3.gsub(/(\[.*\])/,""),
+                                                 'args' => ["param1", "param2"],
+                                                 'queue' => default_queue,
+                                                 'retry' => default_retry_option)
 
       @client.push
     end
