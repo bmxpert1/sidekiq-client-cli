@@ -44,15 +44,22 @@ class SidekiqClientCLI
   def push
     settings.command_args.each do |arg|
       begin
-        jid = Sidekiq::Client.push({ 'class' => arg,
+        if arg =~ /^(\w+)\[(.+)\]$/
+          class_name = $1
+          args = $2.gsub(/\s+/, "").split(',')
+        else
+          class_name = arg.gsub(/(\[|\])/, '')
+          args = []
+        end
+
+        jid = Sidekiq::Client.push({ 'class' => class_name,
                                      'queue' => settings.queue,
-                                     'args'  => [],
+                                     'args'  => args,
                                      'retry' => settings.retry })
-        p "Posted #{arg} to queue '#{settings.queue}', Job ID : #{jid}, Retry : #{settings.retry}"
+        p "Posted #{class_name} to queue '#{settings.queue}', Job ID : #{jid}, Retry : #{settings.retry}, Args : #{args}"
       rescue StandardError => ex
         p "Failed to push to queue : #{ex.message}"
       end
     end
   end
-
 end
